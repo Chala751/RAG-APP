@@ -1,7 +1,10 @@
-import VoyageAI from "voyageai";
+import { VoyageAIClient } from "voyageai";
 import Document from "../models/Document.js";
 
-const voyage = new VoyageAI({ apiKey: process.env.VOYAGE_API_KEY });
+
+const client = new VoyageAIClient({
+  apiKey: process.env.VOYAGE_API_KEY, 
+});
 
 export const uploadText = async (req, res) => {
   try {
@@ -11,15 +14,16 @@ export const uploadText = async (req, res) => {
       return res.status(400).json({ message: "Text is required" });
     }
 
-    
-    const embeddingResponse = await voyage.embed({
+ 
+    const embeddingResponse = await client.embed({
       model: "voyage-2",
-      input: text,
+      input: [text], 
     });
 
+   
     const embedding = embeddingResponse.data[0].embedding;
 
-    
+   
     const newDoc = new Document({ text, embedding });
     await newDoc.save();
 
