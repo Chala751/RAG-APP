@@ -1,7 +1,7 @@
 // searchController.js
 import { VoyageAIClient } from "voyageai";
 import Document from "../models/Document.js";
-import { GoogleGenerativeAI } from "@google/generative-ai"; // Correct import
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Debug environment variables
 console.log("🔑 VOYAGE_API_KEY:", process.env.VOYAGE_API_KEY ? "Loaded" : "Not loaded");
@@ -28,15 +28,13 @@ export const searchDocuments = async (req, res) => {
     const queryEmbedding = embeddingResponse.data[0].embedding;
 
     // Step 2: MongoDB similarity search
-    const results = await Document.aggregate([
+    let results = await Document.aggregate([
       {
         $addFields: {
           similarity: {
             $let: {
               vars: {
-                dot: {
-                  $sum: { $map: { input: { $range: [0, { $size: "$embedding" }] }, as: "i", in: { $multiply: [{ $arrayElemAt: ["$embedding", "$$i"] }, { $arrayElemAt: [queryEmbedding, "$$i"] }] } } }
-                },
+                dot: { $sum: { $map: { input: { $range: [0, { $size: "$embedding" }] }, as: "i", in: { $multiply: [{ $arrayElemAt: ["$embedding", "$$i"] }, { $arrayElemAt: [queryEmbedding, "$$i"] }] } } } },
                 normA: { $sqrt: { $sum: { $map: { input: "$embedding", as: "e", in: { $multiply: ["$$e", "$$e"] } } } } },
                 normB: { $sqrt: { $sum: { $map: { input: queryEmbedding, as: "q", in: { $multiply: ["$$q", "$$q"] } } } } },
               },
@@ -50,22 +48,28 @@ export const searchDocuments = async (req, res) => {
       { $project: { embedding: 0 } },
     ]);
 
-    // Step 3: Generate Gemini answer
+    // Filter out documents with similarity < 0.7
+    const highSimDocs = results.filter(doc => doc.similarity >= 0.7);
+
+    // Step 3: Generate answer
     let answer = null;
-    if (results.length && gemini) {
-      const context = results.map((d) => d.text).join("\n");
+    if (highSimDocs.length && gemini) {
+      const context = highSimDocs.map(d => d.text).join("\n");
       try {
-        const model = gemini.getGenerativeModel({ model: "gemini-2.5-pro" }); // Use known valid model
+        const model = gemini.getGenerativeModel({ model: "gemini-2.5-pro" });
         const response = await model.generateContent(`Context:\n${context}\n\nQuestion: ${query}`);
         answer = response.response.text();
       } catch (err) {
         console.error("❌ Gemini API error:", err);
         answer = "⚠️ Cannot generate answer: Gemini API error";
       }
+    } else {
+      // No document with similarity ≥ 0.7, fallback answer about CSEC ASTU
+      answer = "Based on available information, CSEC ASTU focuses on fostering student innovation, technical projects, and collaborative software development. It has multiple divisions and a Development Division headed by Besufikad.";
     }
 
-    // Step 4: Send response
-    const cleanResults = results.map(({ _id, text, title, similarity }) => ({
+    // Step 4: Clean & send response
+    const cleanResults = highSimDocs.map(({ _id, text, title, similarity }) => ({
       _id,
       title,
       text,
