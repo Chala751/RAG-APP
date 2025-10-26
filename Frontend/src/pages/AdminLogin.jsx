@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAdmin } from "../context/AdminContext";
 import { adminLogin } from "../services/api";
 import { ArrowLeft } from "lucide-react";
+import { toast } from "react-hot-toast";
 
 const AdminLogin = () => {
   const [email, setEmail] = useState("");
@@ -16,6 +17,7 @@ const AdminLogin = () => {
     try {
       const res = await adminLogin(email, password);
       login(res.data);
+      toast.success("Logged in successfully!");
       navigate("/admin/dashboard");
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");

@@ -2,10 +2,12 @@ import { useState } from "react";
 import { useAdmin } from "../context/AdminContext";
 import { uploadText } from "../services/api";
 import { toast } from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
 const AdminDashboard = () => {
   const [text, setText] = useState("");
   const { admin, logout } = useAdmin();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,6 +23,12 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleLogout = () => {
+    logout();
+    toast.success("Logged out successfully!");
+    navigate("/admin"); 
+  };
+
   return (
     <div className="min-h-screen bg-blue-50 p-6">
       <div className="flex justify-between items-center mb-6">
@@ -28,8 +36,8 @@ const AdminDashboard = () => {
           Admin Dashboard
         </h1>
         <button
-          onClick={logout}
-          className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+          onClick={handleLogout}
+          className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition cursor-pointer"
         >
           Logout
         </button>
