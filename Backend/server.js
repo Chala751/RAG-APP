@@ -19,7 +19,7 @@ import connectDB from "./config/db.js";
 
 const embedRoutesPromise = import("./routes/embedRoutes.js");
 const searchRoutesPromise = import("./routes/searchRoutes.js");
-import adminRoutes from "./routes/adminRoutes.js";
+const adminRoutes = await import("./routes/adminRoutes.js");
 
 const [embedRoutes, searchRoutes] = await Promise.all([embedRoutesPromise, searchRoutesPromise]);
 
@@ -32,7 +32,8 @@ app.use(cors());
 // Routes
 app.use("/api", embedRoutes.default);
 app.use("/api", searchRoutes.default);
-app.use("/api/admin", adminRoutes);
+app.use("/api/admin", (await import("./routes/adminRoutes.js")).default);
+
 
 app.get("/", (req, res) => {
   res.send("server is running...");
