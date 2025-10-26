@@ -1,12 +1,12 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-//import Home from "./pages/Home";
+import Home from "./pages/Home";
 //import About from "./pages/About";
-//import { SearchProvider } from "./context/SearchContext";
+import { SearchProvider } from "./context/SearchContext";
 import { Toaster } from "react-hot-toast";
 
 const App = () => {
   return (
-    //<SearchProvider>
+    <SearchProvider>
       <BrowserRouter>
         <Toaster position="top-right" />
         <Routes>
@@ -14,7 +14,7 @@ const App = () => {
           <Route path="/about" element={<About />} />
         </Routes>
       </BrowserRouter>
-    //</SearchProvider>
+    </SearchProvider>
   );
 };
 
