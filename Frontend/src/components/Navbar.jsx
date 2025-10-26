@@ -10,7 +10,7 @@ const Navbar = () => {
       {/* ===== Right Side - Admin Login Button ===== */}
       <div>
         <Link
-          to="/admin/login"
+          to="/admin"
           className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
         >
           <User className="w-5 h-5" />

@@ -3,6 +3,7 @@ import Home from "./pages/Home";
 import About from "./pages/About";
 import { SearchProvider } from "./context/SearchContext";
 import { Toaster } from "react-hot-toast";
+import AdminLogin from "./pages/AdminLogin";
 
 const App = () => {
   return (
@@ -12,6 +13,7 @@ const App = () => {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
+          <Route path="/admin" element={<AdminLogin/>} />
         </Routes>
       </BrowserRouter>
     </SearchProvider>
