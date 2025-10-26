@@ -1,12 +1,16 @@
 import { Brain, Sparkles } from "lucide-react";
 import SearchBar from "../components/SearchBar";
 import Results from "../components/Results";
+import Navbar from "../components/";
 
 const Home = () => {
   return (
     <main className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-blue-100 flex flex-col items-center justify-start">
+      {/* ===== Navbar ===== */}
+      <Navbar />
+
       {/* ===== Hero Section ===== */}
-      <section className="text-center mt-16 px-4 max-w-2xl">
+      <section className="text-center mt-12 px-4 max-w-2xl">
         <div className="flex justify-center items-center gap-3 mb-4">
           <Brain className="text-blue-600 w-10 h-10 animate-pulse" />
           <h1 className="text-4xl font-extrabold text-blue-700 tracking-tight">
