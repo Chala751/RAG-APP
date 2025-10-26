@@ -15,8 +15,15 @@ const AdminLogin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // ✅ API response (token + admin data)
       const res = await adminLogin(email, password);
-      login(res.data);
+
+      // ✅ Store token properly in localStorage
+      localStorage.setItem("adminToken", res.token);
+
+      // ✅ Save admin info in context
+      login(res.admin);
+
       toast.success("Logged in successfully!");
       navigate("/admin/dashboard");
     } catch (err) {
