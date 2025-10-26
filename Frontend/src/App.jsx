@@ -1,13 +1,22 @@
-import React from 'react'
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+//import Home from "./pages/Home";
+//import About from "./pages/About";
+//import { SearchProvider } from "./context/SearchContext";
+import { Toaster } from "react-hot-toast";
 
-function App() {
+const App = () => {
   return (
-    <div>
-      <h1 className="text-3xl font-bold underline">
-        Hello, Tailwind CSS with Vite and React!
-      </h1>
-    </div>
-  )
-}
+    //<SearchProvider>
+      <BrowserRouter>
+        <Toaster position="top-right" />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/about" element={<About />} />
+        </Routes>
+      </BrowserRouter>
+    //</SearchProvider>
+  );
+};
 
-export default App
+export default App;
+
