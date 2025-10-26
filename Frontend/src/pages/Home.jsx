@@ -1,7 +1,7 @@
 import { Brain, Sparkles } from "lucide-react";
 import SearchBar from "../components/SearchBar";
 import Results from "../components/Results";
-import Navbar from "../components/";
+import Navbar from "../components/Navbar";
 
 const Home = () => {
   return (
