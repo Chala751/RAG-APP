@@ -48,8 +48,8 @@ export const searchDocuments = async (req, res) => {
       { $project: { embedding: 0 } },
     ]);
 
-    // Filter out documents with similarity < 0.7
-    const highSimDocs = results.filter(doc => doc.similarity >= 0.7);
+    
+    const highSimDocs = results.filter(doc => doc.similarity >= 0.75);
 
     // Step 3: Generate answer
     let answer = null;
@@ -64,8 +64,8 @@ export const searchDocuments = async (req, res) => {
         answer = "⚠️ Cannot generate answer: Gemini API error";
       }
     } else {
-      // No document with similarity ≥ 0.7, fallback answer about CSEC ASTU
-      answer = "Based on available information, CSEC ASTU focuses on fostering student innovation, technical projects, and collaborative software development. It has multiple divisions and a Development Division headed by Besufikad.";
+      // No document with similarity ≥ 0.75, fallback answer about CSEC ASTU
+      answer = "No relevant information found. Please ask about CSEC ASTU only for now ✌️";
     }
 
     // Step 4: Clean & send response
