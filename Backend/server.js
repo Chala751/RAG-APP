@@ -1,22 +1,26 @@
-import express from "express";
+// server.js
 import dotenv from "dotenv";
+
+// Load .env file before any imports
+dotenv.config({ path: "D:/MERN Stack projects/rag-app/Backend/.env" });
+
+// Debug environment variables
+console.log("✅ .env file loaded");
+console.log("MONGO_URI:", process.env.MONGO_URI ? "Loaded" : "Not loaded");
+console.log("VOYAGE_API_KEY:", process.env.VOYAGE_API_KEY ? "Loaded" : "Not loaded");
+console.log("GEMINI_API_KEY:", process.env.GEMINI_API_KEY ? "Loaded" : "Not loaded");
+console.log("PORT:", process.env.PORT ? "Loaded" : "Not loaded");
+
+// Now import other modules
+import express from "express";
 import cors from "cors";
 import connectDB from "./config/db.js";
-import embedRoutes from "./routes/embedRoutes.js";
-import searchRoutes from "./routes/searchRoutes.js";
 
-// Load .env file with explicit path
-const envPath = "D:/MERN Stack projects/rag-app/Backend/.env";
-const result = dotenv.config({ path: envPath });
+// Use dynamic imports for routes to ensure dotenv is loaded first
+const embedRoutesPromise = import("./routes/embedRoutes.js");
+const searchRoutesPromise = import("./routes/searchRoutes.js");
 
-// Debug dotenv loading
-if (result.error) {
-  console.error("❌ Error loading .env file:", result.error);
-  throw result.error;
-} else {
-  console.log("✅ .env file loaded successfully");
-  //console.log("Parsed env variables:", result.parsed);
-}
+const [embedRoutes, searchRoutes] = await Promise.all([embedRoutesPromise, searchRoutesPromise]);
 
 connectDB();
 
@@ -25,8 +29,8 @@ app.use(express.json());
 app.use(cors());
 
 // Routes
-app.use("/api", embedRoutes);
-app.use("/api", searchRoutes);
+app.use("/api", embedRoutes.default);
+app.use("/api", searchRoutes.default);
 
 app.get("/", (req, res) => {
   res.send("server is running...");
