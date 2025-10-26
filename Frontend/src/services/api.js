@@ -29,3 +29,13 @@ export const adminLogin = async (email, password) => {
     throw error;
   }
 };
+
+// Upload text (requires token)
+export const uploadText = async (text) => {
+  const token = localStorage.getItem("adminToken");
+  return await axios.post(
+    "http://localhost:5000/api/upload-text",
+    { text },
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+};
