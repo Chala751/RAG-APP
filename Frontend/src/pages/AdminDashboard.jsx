@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 
 const AdminDashboard = () => {
   const [text, setText] = useState("");
-  const { admin, logout } = useAdmin();
+  const {  logout } = useAdmin();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -52,7 +52,7 @@ const AdminDashboard = () => {
           rows={5}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Enter text here..."
+          placeholder="Enter text about CSEC ASTU here..."
           className="w-full border rounded p-3 mb-4 focus:outline-blue-500"
         />
         <button

@@ -36,3 +36,15 @@ export const uploadText = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+
+// ===== Get All Uploaded Texts =====
+export const getAllDocuments = async (req, res) => {
+  try {
+    const documents = await Document.find().sort({ createdAt: -1 });
+    res.status(200).json(documents);
+  } catch (error) {
+    console.error("❌ Fetch error:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
