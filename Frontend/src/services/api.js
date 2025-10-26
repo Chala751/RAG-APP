@@ -39,3 +39,33 @@ export const uploadText = async (text) => {
     { headers: { Authorization: `Bearer ${token}` } }
   );
 };
+
+// ===== Get All Uploaded Documents =====
+export const getAllDocuments = async () => {
+  const token = localStorage.getItem("adminToken");
+  try {
+    const response = await axios.get("http://localhost:5000/api", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Get documents API error:", error);
+    throw error;
+  }
+};
+
+// ===== Delete Document by ID =====
+export const deleteDocument = async (id) => {
+  const token = localStorage.getItem("adminToken");
+  try {
+    const response = await axios.delete(
+      `http://localhost:5000/api/${id}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Delete document API error:", error);
+    throw error;
+  }
+};
+
