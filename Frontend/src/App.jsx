@@ -4,6 +4,7 @@ import About from "./pages/About";
 import { SearchProvider } from "./context/SearchContext";
 import { Toaster } from "react-hot-toast";
 import AdminLogin from "./pages/AdminLogin";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const App = () => {
   return (
@@ -14,6 +15,7 @@ const App = () => {
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/admin" element={<AdminLogin/>} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
         </Routes>
       </BrowserRouter>
     </SearchProvider>
