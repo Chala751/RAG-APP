@@ -1,4 +1,3 @@
-// searchController.js
 import { VoyageAIClient } from "voyageai";
 import Document from "../models/Document.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -24,7 +23,8 @@ export const searchDocuments = async (req, res) => {
 
     // Step 1: Embed the query
     const embeddingResponse = await voyage.embed({ model: "voyage-2", input: [query.trim()] });
-    if (!embeddingResponse?.data?.[0]?.embedding) return res.status(500).json({ message: "Failed to generate embedding" });
+    if (!embeddingResponse?.data?.[0]?.embedding)
+      return res.status(500).json({ message: "Failed to generate embedding" });
     const queryEmbedding = embeddingResponse.data[0].embedding;
 
     // Step 2: MongoDB similarity search
@@ -34,9 +34,34 @@ export const searchDocuments = async (req, res) => {
           similarity: {
             $let: {
               vars: {
-                dot: { $sum: { $map: { input: { $range: [0, { $size: "$embedding" }] }, as: "i", in: { $multiply: [{ $arrayElemAt: ["$embedding", "$$i"] }, { $arrayElemAt: [queryEmbedding, "$$i"] }] } } } },
-                normA: { $sqrt: { $sum: { $map: { input: "$embedding", as: "e", in: { $multiply: ["$$e", "$$e"] } } } } },
-                normB: { $sqrt: { $sum: { $map: { input: queryEmbedding, as: "q", in: { $multiply: ["$$q", "$$q"] } } } } },
+                dot: {
+                  $sum: {
+                    $map: {
+                      input: { $range: [0, { $size: "$embedding" }] },
+                      as: "i",
+                      in: {
+                        $multiply: [
+                          { $arrayElemAt: ["$embedding", "$$i"] },
+                          { $arrayElemAt: [queryEmbedding, "$$i"] },
+                        ],
+                      },
+                    },
+                  },
+                },
+                normA: {
+                  $sqrt: {
+                    $sum: {
+                      $map: { input: "$embedding", as: "e", in: { $multiply: ["$$e", "$$e"] } },
+                    },
+                  },
+                },
+                normB: {
+                  $sqrt: {
+                    $sum: {
+                      $map: { input: queryEmbedding, as: "q", in: { $multiply: ["$$q", "$$q"] } },
+                    },
+                  },
+                },
               },
               in: { $divide: ["$$dot", { $multiply: ["$$normA", "$$normB"] }] },
             },
@@ -48,23 +73,38 @@ export const searchDocuments = async (req, res) => {
       { $project: { embedding: 0 } },
     ]);
 
-    
-    const highSimDocs = results.filter(doc => doc.similarity >= 0.75);
+    const highSimDocs = results.filter((doc) => doc.similarity >= 0.75);
 
     // Step 3: Generate answer
     let answer = null;
     if (highSimDocs.length && gemini) {
-      const context = highSimDocs.map(d => d.text).join("\n");
+      const context = highSimDocs.map((d) => d.text).join("\n");
       try {
         const model = gemini.getGenerativeModel({ model: "gemini-2.5-pro" });
         const response = await model.generateContent(`Context:\n${context}\n\nQuestion: ${query}`);
-        answer = response.response.text();
+
+        
+        let rawAnswer = response.response.text();
+        answer = rawAnswer
+          .replace(/\*\*/g, "") 
+          .replace(/\*/g, "•") 
+          .replace(/#+/g, "") 
+          .replace(/\n{2,}/g, "\n") 
+          .trim();
+
+        // Remove "Answer:" prefix if it exists
+        if (answer.toLowerCase().startsWith("answer:")) {
+          answer = answer.replace(/^answer:\s*/i, "");
+        }
+
+       
+        answer = `✨ ${answer}`;
       } catch (err) {
         console.error("❌ Gemini API error:", err);
         answer = "⚠️ Cannot generate answer: Gemini API error";
       }
     } else {
-      // No document with similarity ≥ 0.75, fallback answer about CSEC ASTU
+      // No document with similarity ≥ 0.75
       answer = "No relevant information found. Please ask about CSEC ASTU only for now ✌️";
     }
 
