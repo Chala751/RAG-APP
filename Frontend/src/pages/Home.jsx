@@ -40,7 +40,7 @@ const Home = () => {
 
       {/* ===== Footer ===== */}
       <footer className="text-sm text-gray-500 pb-6">
-        © {new Date().getFullYear()} CSEC ASTU | Built  by Dev Team
+        © {new Date().getFullYear()} CSEC ASTU | Built  by Syntax Squad
       </footer>
     </main>
   );
