@@ -5,11 +5,11 @@ const voyage = process.env.VOYAGE_API_KEY
   ? new VoyageAIClient({ apiKey: process.env.VOYAGE_API_KEY })
   : null;
 
-// Utility: simple chunker by sentences or words
-const chunkText = (text, chunkSize = 100) => {
+// Utility: chunk text with overlap
+const chunkText = (text, chunkSize = 100, overlap = 100) => {
   const words = text.split(" ");
   const chunks = [];
-  for (let i = 0; i < words.length; i += chunkSize) {
+  for (let i = 0; i < words.length; i += chunkSize - overlap) {
     chunks.push(words.slice(i, i + chunkSize).join(" "));
   }
   return chunks;
@@ -21,26 +21,35 @@ export const uploadText = async (req, res) => {
     if (!text) return res.status(400).json({ message: "Text is required." });
     if (!voyage) throw new Error("VoyageAI client not initialized.");
 
-    const chunks = chunkText(text, 100); // 100 words per chunk
+    const chunks = chunkText(text, 100, 20); // 100 words with 20 words overlap
     const docs = [];
 
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
+
       const embeddingResp = await voyage.embed({
         model: "voyage-2",
         input: [chunk],
       });
+
       const embedding = embeddingResp?.data?.[0]?.embedding;
       if (!embedding) continue;
+
+      const keywords = Array.from(
+        new Set(
+          chunk
+            .split(" ")
+            .map((w) => w.toLowerCase())
+            .filter((w) => w.length > 2)
+        )
+      );
 
       const doc = new Document({
         title,
         text: chunk,
         chunkIndex: i,
-        keywords: chunk
-          .split(" ")
-          .map((w) => w.toLowerCase())
-          .filter((w) => w.length > 2),
+        chunkSize: chunk.split(" ").length,
+        keywords,
         embedding,
       });
 
@@ -54,8 +63,6 @@ export const uploadText = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
-
-
 
 // ===== Get All Uploaded Texts =====
 export const getAllDocuments = async (req, res) => {
