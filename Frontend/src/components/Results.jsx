@@ -3,7 +3,8 @@ import { useSearch } from "../context/SearchContext";
 const Results = () => {
   const { results, answer, loading } = useSearch();
 
-  if (loading) return <p className="text-center mt-8 text-gray-600">Searching...</p>;
+  if (loading)
+    return <p className="text-center mt-8 text-gray-600">Searching...</p>;
 
   return (
     <div className="max-w-3xl mx-auto mt-10 px-4">
@@ -21,12 +22,15 @@ const Results = () => {
             {results.map((r) => (
               <li
                 key={r._id}
-                className="border border-gray-200 p-3 rounded-lg bg-white shadow-sm hover:shadow"
+                className="border border-gray-200 p-3 rounded-lg bg-white shadow-sm hover:shadow transition-all duration-150"
               >
                 <p>{r.text}</p>
                 <p className="text-sm text-gray-500 mt-1">
-                  Similarity: {r.similarity.toFixed(3)}
+                  Similarity: {(r.similarity ?? r.score)?.toFixed(3)}
                 </p>
+                {r.scoreType && (
+                  <p className="text-xs text-gray-400">Type: {r.scoreType}</p>
+                )}
               </li>
             ))}
           </ul>
