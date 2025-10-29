@@ -13,32 +13,21 @@ const gemini = process.env.GEMINI_API_KEY
 export const searchDocuments = async (req, res) => {
   try {
     const { query, limit = 5 } = req.body;
-
     if (!query?.trim()) {
       return res.status(400).json({ message: "Please provide a valid query." });
     }
 
-    // ===== Step 1: Lexical Search =====
-    const keywordResults = await Document.find(
-      { $text: { $search: query } },
-      { score: { $meta: "textScore" } }
-    )
-      .sort({ score: { $meta: "textScore" } })
-      .limit(limit);
-
-    console.log(`🔍 Keyword results found: ${keywordResults.length}`);
-
-    // ===== Step 2: Semantic (Vector) Search =====
     if (!voyage) throw new Error("VoyageAI client not initialized.");
 
-    const embeddingResponse = await voyage.embed({
+    // === STEP 1: Generate embedding for query ===
+    const embeddingResp = await voyage.embed({
       model: "voyage-2",
       input: [query.trim()],
     });
+    const queryEmbedding = embeddingResp?.data?.[0]?.embedding;
+    if (!queryEmbedding) throw new Error("Failed to generate embedding.");
 
-    const queryEmbedding = embeddingResponse?.data?.[0]?.embedding;
-    if (!queryEmbedding) throw new Error("Failed to generate embedding for query.");
-
+    // === STEP 2: Vector Search (semantic) ===
     const vectorResults = await Document.aggregate([
       {
         $addFields: {
@@ -87,67 +76,46 @@ export const searchDocuments = async (req, res) => {
           },
         },
       },
-      { $match: { similarity: { $gte: 0.75 } } },
+      { $match: { similarity: { $gte: 0.75 } } }, // semantic threshold
       { $sort: { similarity: -1 } },
       { $limit: parseInt(limit) },
-      {
-        $project: {
-          _id: 1,
-          title: 1,
-          text: 1,
-          similarity: 1,
-        },
-      },
+      { $project: { _id: 1, title: 1, text: 1, similarity: 1 } },
     ]);
 
     console.log(`🧠 Vector results found: ${vectorResults.length}`);
 
-    // ===== Step 3: Merge Results =====
-    const merged = [
-      ...keywordResults.map((d) => ({
-        _id: d._id,
-        title: d.title,
-        text: d.text,
-        scoreType: "keyword",
-        score: d.score ?? 0,
-      })),
-      ...vectorResults.map((d) => ({
-        _id: d._id,
-        title: d.title,
-        text: d.text,
-        scoreType: "vector",
-        score: d.similarity ?? 0,
-      })),
-    ];
+    // === STEP 3: Keyword Fallback (exact or highly relevant) ===
+    let keywordResults = [];
+    if (vectorResults.length === 0) {
+      keywordResults = await Document.find(
+        { $text: { $search: `"${query}"` } }, // exact match
+        { score: { $meta: "textScore" } }
+      )
+        .sort({ score: { $meta: "textScore" } })
+        .limit(limit);
 
-    // Deduplicate and rank
-    const unique = Array.from(
-      new Map(merged.map((d) => [d._id.toString(), d])).values()
-    ).sort((a, b) => b.score - a.score);
+      // Only consider highly relevant keyword matches
+      keywordResults = keywordResults.filter((d) => d.score > 1.5);
+      console.log(`🔍 Keyword fallback results: ${keywordResults.length}`);
+    }
 
-    const topDocs = unique.slice(0, limit);
+    // === STEP 4: Decide topDocs ===
+    const topDocs = vectorResults.length > 0 ? vectorResults : keywordResults;
 
-    // ===== Step 4: Generate Answer (Gemini) =====
+    // === STEP 5: Generate answer (Gemini) ===
     let answer = "No relevant information found.";
-
     if (gemini && topDocs.length > 0) {
       try {
-        const context = topDocs
-          .map((d) => `Title: ${d.title}\n${d.text}`)
-          .join("\n\n");
-
+        const context = topDocs.map((d) => `${d.title}\n${d.text}`).join("\n\n");
         const model = gemini.getGenerativeModel({ model: "gemini-2.5-pro" });
 
         const response = await model.generateContent(
-          `Use the context below to answer accurately.
-
+          `You are a factual assistant. Use the context below to answer concisely and accurately.
           Context:
           ${context}
-
           Question:
           ${query}
-
-          Provide a concise and factual answer.`
+          Answer in 1-2 sentences.`
         );
 
         answer = response.response.text().trim();
@@ -158,8 +126,8 @@ export const searchDocuments = async (req, res) => {
       }
     }
 
-    // ===== Step 5: Send Response =====
-    return res.status(200).json({
+    // === STEP 6: Return results ===
+    res.status(200).json({
       success: true,
       query,
       totalResults: topDocs.length,
@@ -168,9 +136,6 @@ export const searchDocuments = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Search error:", error);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
