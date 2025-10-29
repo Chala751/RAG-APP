@@ -2,33 +2,51 @@ import { VoyageAIClient } from "voyageai";
 import Document from "../models/Document.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Debug environment variables
-console.log("🔑 VOYAGE_API_KEY:", process.env.VOYAGE_API_KEY ? "Loaded" : "Not loaded");
-console.log("🔑 GEMINI_API_KEY:", process.env.GEMINI_API_KEY ? "Loaded" : "Not loaded");
+// ====== Environment validation ======
+console.log("🔑 VOYAGE_API_KEY:", process.env.VOYAGE_API_KEY ? "Loaded" : "❌ Missing");
+console.log("🔑 GEMINI_API_KEY:", process.env.GEMINI_API_KEY ? "Loaded" : "❌ Missing");
 
-// Check for API keys
-if (!process.env.VOYAGE_API_KEY) console.error("❌ VOYAGE_API_KEY is not defined. Embedding disabled.");
-if (!process.env.GEMINI_API_KEY) console.error("❌ GEMINI_API_KEY is not defined. Gemini disabled.");
+if (!process.env.VOYAGE_API_KEY) console.error("❌ VOYAGE_API_KEY not defined. Embedding disabled.");
+if (!process.env.GEMINI_API_KEY) console.error("❌ GEMINI_API_KEY not defined. Gemini disabled.");
 
-// Initialize clients
+// ====== Initialize clients ======
 const voyage = process.env.VOYAGE_API_KEY ? new VoyageAIClient({ apiKey: process.env.VOYAGE_API_KEY }) : null;
 const gemini = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
 
+// ====== Hybrid Search Controller ======
 export const searchDocuments = async (req, res) => {
   try {
     const { query, limit = 5 } = req.body;
-    if (!query || !query.trim()) return res.status(400).json({ message: "Valid query required" });
 
-    if (!voyage) return res.status(500).json({ message: "VoyageAI not initialized" });
+    if (!query?.trim()) {
+      return res.status(400).json({ message: "Please provide a valid query." });
+    }
 
-    // Step 1: Embed the query
-    const embeddingResponse = await voyage.embed({ model: "voyage-2", input: [query.trim()] });
-    if (!embeddingResponse?.data?.[0]?.embedding)
-      return res.status(500).json({ message: "Failed to generate embedding" });
+    // === Step 1: Lexical (Keyword) Search ===
+    const keywordResults = await Document.find(
+      { $text: { $search: query } },
+      { score: { $meta: "textScore" } }
+    )
+      .sort({ score: { $meta: "textScore" } })
+      .limit(limit);
+
+    console.log(`🔍 Keyword results found: ${keywordResults.length}`);
+
+    // === Step 2: Semantic (Vector) Search ===
+    if (!voyage) throw new Error("VoyageAI client not initialized.");
+
+    const embeddingResponse = await voyage.embed({
+      model: "voyage-2",
+      input: [query.trim()],
+    });
+
+    if (!embeddingResponse?.data?.[0]?.embedding) {
+      throw new Error("Failed to generate query embedding.");
+    }
+
     const queryEmbedding = embeddingResponse.data[0].embedding;
 
-    // Step 2: MongoDB similarity search
-    let results = await Document.aggregate([
+    const vectorResults = await Document.aggregate([
       {
         $addFields: {
           similarity: {
@@ -73,50 +91,83 @@ export const searchDocuments = async (req, res) => {
       { $project: { embedding: 0 } },
     ]);
 
-    const highSimDocs = results.filter((doc) => doc.similarity >= 0.75);
+    console.log(`🧠 Vector results found: ${vectorResults.length}`);
 
-    // Step 3: Generate answer
-    let answer = null;
-    if (highSimDocs.length && gemini) {
-      const context = highSimDocs.map((d) => d.text).join("\n");
+    // === Step 3: Merge Hybrid Results ===
+    const merged = [
+      ...keywordResults.map((doc) => ({
+        ...doc.toObject(),
+        scoreType: "keyword",
+        score: doc.score || 0,
+      })),
+      ...vectorResults.map((doc) => ({
+        ...doc,
+        scoreType: "vector",
+        score: doc.similarity || 0,
+      })),
+    ];
+
+    // Deduplicate and sort by score
+    const unique = Array.from(
+      new Map(merged.map((d) => [d._id.toString(), d])).values()
+    ).sort((a, b) => b.score - a.score);
+
+    const topDocs = unique.slice(0, limit);
+
+    // === Step 4: Generate Final Answer with Gemini ===
+    let answer = "No relevant information found.";
+
+    if (topDocs.length && gemini) {
       try {
-        const model = gemini.getGenerativeModel({ model: "gemini-2.5-pro" });
-        const response = await model.generateContent(`Context:\n${context}\n\nQuestion: ${query}`);
+        const context = topDocs.map((d) => `Title: ${d.title}\n${d.text}`).join("\n\n");
 
-        
+        const model = gemini.getGenerativeModel({ model: "gemini-2.5-pro" });
+
+        const response = await model.generateContent(
+          `You are a helpful assistant. Use the context below to answer accurately.
+          
+          Context:
+          ${context}
+
+          Question:
+          ${query}
+
+          Answer in a clear and concise paragraph.`
+        );
+
         let rawAnswer = response.response.text();
+
+        // Clean Gemini output
         answer = rawAnswer
-          .replace(/\*\*/g, "") 
-          .replace(/\*/g, "•") 
-          .replace(/#+/g, "") 
-          .replace(/\n{2,}/g, "\n") 
+          .replace(/\*\*/g, "")
+          .replace(/#+/g, "")
+          .replace(/\*/g, "•")
+          .replace(/\n{2,}/g, "\n")
           .trim();
 
-        // Remove "Answer:" prefix if it exists
         if (answer.toLowerCase().startsWith("answer:")) {
           answer = answer.replace(/^answer:\s*/i, "");
         }
 
-       
         answer = `✨ ${answer}`;
       } catch (err) {
-        console.error("❌ Gemini API error:", err);
-        answer = "⚠️ Cannot generate answer: Gemini API error";
+        console.error("❌ Gemini API error:", err.message);
+        answer = "⚠️ Gemini failed to generate a response. Try again later.";
       }
-    } else {
-      // No document with similarity ≥ 0.75
-      answer = "No relevant information found. Please ask about CSEC ASTU only for now ✌️";
     }
 
-    // Step 4: Clean & send response
-    const cleanResults = highSimDocs.map(({ _id, text, title, similarity }) => ({
-      _id,
-      title,
-      text,
-      similarity: Number(similarity.toFixed(4)),
-    }));
-
-    res.status(200).json({ query, results: cleanResults, answer });
+    // === Step 5: Send Clean Response ===
+    res.status(200).json({
+      query,
+      results: topDocs.map((d) => ({
+        _id: d._id,
+        title: d.title,
+        text: d.text,
+        score: Number(d.score.toFixed(4)),
+        scoreType: d.scoreType,
+      })),
+      answer,
+    });
   } catch (error) {
     console.error("❌ Search error:", error);
     res.status(500).json({ message: "Server error", error: error.message });
