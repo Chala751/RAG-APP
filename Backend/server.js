@@ -20,7 +20,24 @@ connectDB();
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+const allowedOrigins = [
+  "http://localhost:5173",          // local dev
+  "https://rag-app-omega.vercel.app",   // your deployed frontend
+ 
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
 
 // Routes
 app.use("/api", embedRoutes.default);
