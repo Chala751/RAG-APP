@@ -10,7 +10,19 @@ const SearchBar = () => {
 
   const handleSearch = async (e) => {
     e.preventDefault();
-    if (!input.trim()) return toast.error("Please enter a question!");
+
+    // ✅ Validation before sending request
+    if (!input.trim()) {
+      return toast.error("Please enter a question!");
+    }
+
+    // ✅ Handle short queries gracefully (less than 10 chars)
+    if (input.trim().length < 10) {
+      return toast(
+        "Please enter a meaningful question (at least 10 characters).",
+        { icon: "✨" }
+      );
+    }
 
     try {
       setLoading(true);
@@ -24,8 +36,13 @@ const SearchBar = () => {
       // ✅ Clear input after successful search
       setInput("");
     } catch (err) {
-      toast.error("Something went wrong!");
-      console.error(err);
+      // Handle 400 specifically
+      if (err.response?.status === 400) {
+        toast.error(err.response.data?.answer || "Invalid question.");
+      } else {
+        toast.error("Something went wrong!");
+      }
+      console.error("❌ Search error:", err);
     } finally {
       setLoading(false);
     }
