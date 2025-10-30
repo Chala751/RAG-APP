@@ -5,7 +5,7 @@ const voyage = process.env.VOYAGE_API_KEY
   ? new VoyageAIClient({ apiKey: process.env.VOYAGE_API_KEY })
   : null;
 
-// ✅ Utility: Chunk text with configurable overlap
+
 const chunkText = (text, chunkSize = 100, overlap = 20) => {
   const words = text.split(" ");
   const chunks = [];
@@ -23,15 +23,15 @@ export const uploadText = async (req, res) => {
     if (!text) return res.status(400).json({ message: "Text is required." });
     if (!voyage) throw new Error("VoyageAI client not initialized.");
 
-    // ✅ Chunk with slight overlap (prevents context loss)
+   
     const chunks = chunkText(text, 100, 20);
-    const batchSize = 5; // Process 5 chunks at once
+    const batchSize = 5; 
     let totalInserted = 0;
 
     for (let i = 0; i < chunks.length; i += batchSize) {
       const batch = chunks.slice(i, i + batchSize);
 
-      // 🔹 Generate embeddings in one request
+  
       const embeddingResp = await voyage.embed({
         model: "voyage-2",
         input: batch,
@@ -65,7 +65,6 @@ export const uploadText = async (req, res) => {
       await Document.insertMany(docs);
       totalInserted += docs.length;
 
-      // ✅ Force memory cleanup (works if node started with --expose-gc)
       global.gc?.();
     }
 
