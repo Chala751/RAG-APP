@@ -83,7 +83,7 @@ export const searchDocuments = async (req, res) => {
           },
         },
       },
-      { $match: { similarity: { $gte: 0.65 } } },
+      { $match: { similarity: { $gte: 0.68 } } },
       { $sort: { similarity: -1 } },
       { $limit: parseInt(limit) },
       { $project: { _id: 1, title: 1, text: 1, similarity: 1 } },
@@ -106,7 +106,7 @@ export const searchDocuments = async (req, res) => {
     const topDocs = vectorResults.length > 0 ? vectorResults : keywordResults;
 
     //  Generate Answer with Gemini
-    let answer = "No relevant information found. Please ask about CSEC ASTU ✌️";
+    let answer = "No relevant information found. Please ask about CSEC ASTU I am assistant to give you information about CSEC ASTU✌️";
     if (gemini && topDocs.length > 0) {
       try {
         const context = topDocs.map((d) => `${d.title}\n${d.text}`).join("\n\n");
