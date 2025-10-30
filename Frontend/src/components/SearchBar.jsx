@@ -15,9 +15,14 @@ const SearchBar = () => {
     try {
       setLoading(true);
       setQuery(input);
+
       const data = await searchQuery(input);
+
       setResults(data.results || []);
       setAnswer(data.answer || "No answer found.");
+
+      // ✅ Clear input after successful search
+      setInput("");
     } catch (err) {
       toast.error("Something went wrong!");
       console.error(err);
