@@ -21,10 +21,10 @@ connectDB();
 const app = express();
 app.use(express.json());
 const allowedOrigins = [
-  "http://localhost:5173",          // local dev
+  "http://localhost:5173",          
   "https://rag-app-omega.vercel.app", 
  " https://rag-app-git-main-chala751s-projects.vercel.app",
-  "https://rag-3tdhnma3w-chala751s-projects.vercel.app" // your deployed frontend
+  "https://rag-3tdhnma3w-chala751s-projects.vercel.app"
  
 ];
 

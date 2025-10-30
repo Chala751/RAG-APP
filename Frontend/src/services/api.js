@@ -1,13 +1,12 @@
 import axios from "axios";
 
-// Base API instance for general routes
-const api = axios.create({
-   baseURL:"https://rag-app-5c2q.onrender.com",
-  //baseURL: "http://localhost:5000/api", // your backend base URL
-});
+// Use environment variable for base URL
+const BASE_URL = import.meta.env.VITE_API_URL;
 
-// Base API URL for admin routes
-const ADMIN_API_URL = "http://localhost:5000/api/admin";
+// Create a single axios instance
+const api = axios.create({
+  baseURL: BASE_URL,
+});
 
 // ===== Search API =====
 export const searchQuery = async (query) => {
@@ -23,7 +22,7 @@ export const searchQuery = async (query) => {
 // ===== Admin Login API =====
 export const adminLogin = async (email, password) => {
   try {
-    const response = await axios.post(`${ADMIN_API_URL}/login`, { email, password });
+    const response = await api.post("/admin/login", { email, password });
     return response.data;
   } catch (error) {
     console.error("Admin login API error:", error);
@@ -31,21 +30,27 @@ export const adminLogin = async (email, password) => {
   }
 };
 
-// Upload text (requires token)
+// ===== Upload text =====
 export const uploadText = async (text) => {
   const token = localStorage.getItem("adminToken");
-  return await axios.post(
-    "http://localhost:5000/api/upload-text",
-    { text },
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
+  try {
+    const response = await api.post(
+      "/upload-text",
+      { text },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Upload text API error:", error);
+    throw error;
+  }
 };
 
-// ===== Get All Uploaded Documents =====
+// ===== Get All Documents =====
 export const getAllDocuments = async () => {
   const token = localStorage.getItem("adminToken");
   try {
-    const response = await axios.get("http://localhost:5000/api", {
+    const response = await api.get("/", {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -55,18 +60,16 @@ export const getAllDocuments = async () => {
   }
 };
 
-// ===== Delete Document by ID =====
+// ===== Delete Document =====
 export const deleteDocument = async (id) => {
   const token = localStorage.getItem("adminToken");
   try {
-    const response = await axios.delete(
-      `http://localhost:5000/api/${id}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    const response = await api.delete(`/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     return response.data;
   } catch (error) {
     console.error("Delete document API error:", error);
     throw error;
   }
 };
-
