@@ -22,7 +22,9 @@ const app = express();
 app.use(express.json());
 const allowedOrigins = [
   "http://localhost:5173",          // local dev
-  "https://rag-app-omega.vercel.app",   // your deployed frontend
+  "https://rag-app-omega.vercel.app", 
+  "rag-app-git-main-chala751s-projects.vercel.app" ,
+  "rag-3tdhnma3w-chala751s-projects.vercel.app" // your deployed frontend
  
 ];
 
