@@ -76,7 +76,7 @@ export const searchDocuments = async (req, res) => {
           },
         },
       },
-      { $match: { similarity: { $gte: 0.75 } } }, // semantic threshold
+      { $match: { similarity: { $gte: 0.69 } } }, // semantic threshold
       { $sort: { similarity: -1 } },
       { $limit: parseInt(limit) },
       { $project: { _id: 1, title: 1, text: 1, similarity: 1 } },
