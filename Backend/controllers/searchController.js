@@ -103,7 +103,7 @@ export const searchDocuments = async (req, res) => {
     const topDocs = vectorResults.length > 0 ? vectorResults : keywordResults;
 
     // === STEP 5: Generate answer (Gemini) ===
-    let answer = "No relevant information found.";
+    let answer = "No relevant information found. Please ask about CSEC ASTU ✌️";
     if (gemini && topDocs.length > 0) {
       try {
         const context = topDocs.map((d) => `${d.title}\n${d.text}`).join("\n\n");
