@@ -1,15 +1,8 @@
 
 import dotenv from "dotenv";
 
-// Load .env file before any imports
-dotenv.config({ path: "D:/MERN Stack projects/rag-app/Backend/.env" });
 
-// Debug environment variables
-console.log("✅ .env file loaded");
-console.log("MONGO_URI:", process.env.MONGO_URI ? "Loaded" : "Not loaded");
-console.log("VOYAGE_API_KEY:", process.env.VOYAGE_API_KEY ? "Loaded" : "Not loaded");
-console.log("GEMINI_API_KEY:", process.env.GEMINI_API_KEY ? "Loaded" : "Not loaded");
-console.log("PORT:", process.env.PORT ? "Loaded" : "Not loaded");
+dotenv.config({ path: "D:/MERN Stack projects/rag-app/Backend/.env" });
 
 
 import express from "express";
