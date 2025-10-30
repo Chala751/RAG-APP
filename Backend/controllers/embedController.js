@@ -21,7 +21,7 @@ export const uploadText = async (req, res) => {
     if (!text) return res.status(400).json({ message: "Text is required." });
     if (!voyage) throw new Error("VoyageAI client not initialized.");
 
-    const chunks = chunkText(text, 100, 20); // 100 words with 20 words overlap
+    const chunks = chunkText(text, 100, 100); 
     const docs = [];
 
     for (let i = 0; i < chunks.length; i++) {
