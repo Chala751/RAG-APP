@@ -19,7 +19,7 @@ export const searchDocuments = async (req, res) => {
 
     if (!voyage) throw new Error("VoyageAI client not initialized.");
 
-    // === STEP 1: Generate embedding for query ===
+    //  Generate embedding for query 
     const embeddingResp = await voyage.embed({
       model: "voyage-2",
       input: [query.trim()],
@@ -27,7 +27,7 @@ export const searchDocuments = async (req, res) => {
     const queryEmbedding = embeddingResp?.data?.[0]?.embedding;
     if (!queryEmbedding) throw new Error("Failed to generate embedding.");
 
-    // === STEP 2: Vector Search (semantic) ===
+    //  Vector Search (semantic) 
     const vectorResults = await Document.aggregate([
       {
         $addFields: {
@@ -76,33 +76,33 @@ export const searchDocuments = async (req, res) => {
           },
         },
       },
-      { $match: { similarity: { $gte: 0.69 } } }, // semantic threshold
+      { $match: { similarity: { $gte: 0.69 } } }, 
       { $sort: { similarity: -1 } },
       { $limit: parseInt(limit) },
       { $project: { _id: 1, title: 1, text: 1, similarity: 1 } },
     ]);
 
-    console.log(`🧠 Vector results found: ${vectorResults.length}`);
+    //console.log(` Vector results found: ${vectorResults.length}`);
 
-    // === STEP 3: Keyword Fallback (exact or highly relevant) ===
+    //  Keyword  (exact or highly relevant) 
     let keywordResults = [];
     if (vectorResults.length === 0) {
       keywordResults = await Document.find(
-        { $text: { $search: `"${query}"` } }, // exact match
+        { $text: { $search: `"${query}"` } }, 
         { score: { $meta: "textScore" } }
       )
         .sort({ score: { $meta: "textScore" } })
         .limit(limit);
 
-      // Only consider highly relevant keyword matches
+      
       keywordResults = keywordResults.filter((d) => d.score > 1.5);
-      console.log(`🔍 Keyword fallback results: ${keywordResults.length}`);
+      //console.log(` Keyword fallback results: ${keywordResults.length}`);
     }
 
-    // === STEP 4: Decide topDocs ===
+    //  Decide topDocs 
     const topDocs = vectorResults.length > 0 ? vectorResults : keywordResults;
 
-    // === STEP 5: Generate answer (Gemini) ===
+    //  Generate answer 
     let answer = "No relevant information found. Please ask about CSEC ASTU ✌️";
     if (gemini && topDocs.length > 0) {
       try {
@@ -121,12 +121,12 @@ export const searchDocuments = async (req, res) => {
         answer = response.response.text().trim();
         answer = `✨ ${answer.replace(/\*\*/g, "").replace(/#+/g, "")}`;
       } catch (err) {
-        console.error("❌ Gemini error:", err.message);
-        answer = "⚠️ Gemini failed to generate a response.";
+        console.error(" Gemini error:", err.message);
+        answer = " Gemini failed to generate a response.";
       }
     }
 
-    // === STEP 6: Return results ===
+    //  Return results 
     res.status(200).json({
       success: true,
       query,
