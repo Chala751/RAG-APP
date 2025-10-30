@@ -2,7 +2,8 @@ import axios from "axios";
 
 // Base API instance for general routes
 const api = axios.create({
-  baseURL: "http://localhost:5000/api", // your backend base URL
+   baseURL:"https://rag-app-5c2q.onrender.com",
+  //baseURL: "http://localhost:5000/api", // your backend base URL
 });
 
 // Base API URL for admin routes
