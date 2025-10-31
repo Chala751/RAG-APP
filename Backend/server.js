@@ -25,7 +25,8 @@ const allowedOrigins = [
   "https://rag-app-omega.vercel.app",
   "https://rag-app-git-main-chala751s-projects.vercel.app",
   "https://rag-3tdhnma3w-chala751s-projects.vercel.app",
-  "https://rag-app-five-eta.vercel.app",  // add this new frontend URL
+  "https://rag-app-five-eta.vercel.app",
+  "https://rag-app-csec.vercel.app/" 
 ];
 
 app.use(
